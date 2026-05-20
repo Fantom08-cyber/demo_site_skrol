@@ -31,6 +31,7 @@ const beats: Record<Beat, BeatConfig> = {
     title: "ВЕТЕР ПОДНИМАЕТСЯ",
     subtitle: "Что-то надвигается снизу...",
     align: "left",
+    gradient: true,
   },
   C: {
     range: [0.50, 0.70],
@@ -41,8 +42,8 @@ const beats: Record<Beat, BeatConfig> = {
   },
   D: {
     range: [0.75, 0.95],
-    title: "ОТПРАВЬ ПОДРУГЕ",
-    subtitle: "Пусть она тоже попробует \ud83d\ude08",
+    title: "ХОЧЕШЬ ТАКОЙ САЙТ?",
+    subtitle: "Пиши мне — сделаю динамический сайт для тебя",
     align: "center",
     showCTA: true,
   },
@@ -104,22 +105,8 @@ export default function Home() {
     setProgress(p);
   }, []);
 
-  const handleShare = async () => {
-    const url = window.location.href;
-    const text = "\ud83d\udc57 \ud83c\udf2c\ufe0f Управляй ветром — скроллом запусти ураган!";
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: "Управляй ветром", text, url });
-      } catch {}
-    } else {
-      try {
-        await navigator.clipboard.writeText(url);
-        alert("Ссылка скопирована! Отправь подруге \ud83d\ude09");
-      } catch {
-        prompt("Скопируй ссылку:", url);
-      }
-    }
+  const handleTelegram = () => {
+    window.open("https://t.me/iog11", "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -176,10 +163,10 @@ export default function Home() {
                 </p>
                 {beat.showCTA && (
                   <button
-                    onClick={handleShare}
+                    onClick={handleTelegram}
                     className="pointer-events-auto mt-5 px-7 py-3 bg-[#FF3B30] text-white font-semibold text-base rounded-full active:scale-95 transition-all duration-200 shadow-lg shadow-red-500/25"
                   >
-                    Поделиться
+                    Заказать сайт
                   </button>
                 )}
               </motion.div>
@@ -202,10 +189,10 @@ export default function Home() {
                   </p>
                   {beat.showCTA && (
                     <button
-                      onClick={handleShare}
+                      onClick={handleTelegram}
                       className="pointer-events-auto mt-6 px-8 py-3 bg-[#FF3B30] text-white font-semibold text-lg rounded-full hover:bg-red-600 hover:scale-105 active:scale-95 transition-all duration-200 shadow-lg shadow-red-500/25"
                     >
-                      Поделиться
+                      Заказать сайт
                     </button>
                   )}
                 </div>
