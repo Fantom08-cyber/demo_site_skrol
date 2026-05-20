@@ -139,7 +139,7 @@ export default function Home() {
           if (opacity <= 0) return null;
 
           const h2ColorClass = beat.gradient
-            ? "bg-gradient-to-r from-[#38BDF8] via-white to-[#FF3B30] bg-clip-text text-transparent"
+            ? "bg-gradient-to-r from-[#38BDF8] to-[#FF3B30] bg-clip-text text-transparent"
             : beat.accent
               ? "text-[#FF3B30]"
               : "text-white/90";
@@ -164,7 +164,7 @@ export default function Home() {
               >
                 <h2
                   className={`font-black tracking-tight leading-none mb-2 ${h2ColorClass} text-[1.875rem]`}
-                  style={{ textShadow: "0 2px 16px rgba(0,0,0,0.9)" }}
+                  style={{ filter: "drop-shadow(0 2px 12px rgba(0,0,0,0.95))" }}
                 >
                   {beat.title}
                 </h2>
