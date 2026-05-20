@@ -13,7 +13,8 @@ interface BeatConfig {
   align: "center" | "left" | "right";
   accent?: boolean;
   showCTA?: boolean;
-  instant?: boolean; // appear at full opacity immediately, no fade-in
+  instant?: boolean;  // appear at full opacity immediately, no fade-in
+  gradient?: boolean; // render title with a colour gradient instead of solid
 }
 
 const beats: Record<Beat, BeatConfig> = {
@@ -23,6 +24,7 @@ const beats: Record<Beat, BeatConfig> = {
     subtitle: "Прокрути вниз — и посмотри что будет",
     align: "center",
     instant: true,
+    gradient: true,
   },
   B: {
     range: [0.25, 0.45],
@@ -136,7 +138,11 @@ export default function Home() {
 
           if (opacity <= 0) return null;
 
-          const h2ColorClass = beat.accent ? "text-[#FF3B30]" : "text-white/90";
+          const h2ColorClass = beat.gradient
+            ? "bg-gradient-to-r from-[#38BDF8] via-white to-[#FF3B30] bg-clip-text text-transparent"
+            : beat.accent
+              ? "text-[#FF3B30]"
+              : "text-white/90";
           // Desktop h2 sizes (applied from sm+ since the block is hidden below sm)
           const h2SizeDesktop = beat.align === "center"
             ? "text-[6.3rem] md:text-[8.4rem]"
