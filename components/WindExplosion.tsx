@@ -14,8 +14,8 @@ export default function WindExplosion({ onProgress, onLoaded }: WindExplosionPro
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const durationRef = useRef<number>(0);
-  const targetTimeRef = useRef<number>(0);
   const animFrameRef = useRef<number>(0);
+  const blobUrlRef = useRef<string>("");
   const [ready, setReady] = useState(false);
   const [loadingPercent, setLoadingPercent] = useState(0);
 
@@ -29,51 +29,68 @@ export default function WindExplosion({ onProgress, onLoaded }: WindExplosionPro
     damping: 30,
   });
 
-  // Track download progress + readiness
+  // Pre-fetch entire video as blob so all frames are in memory before seeking starts.
+  // This avoids the "canplay fires early → seek to unbuffered frame → freeze" problem.
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
 
-    let done = false;
-    const markReady = () => {
-      if (done) return;
-      done = true;
-      durationRef.current = v.duration || 0;
-      setLoadingPercent(100);
-      setReady(true);
-      onLoaded?.();
-    };
+    let cancelled = false;
 
-    const onProgressEvt = () => {
-      if (v.duration && v.buffered.length > 0) {
-        const loaded = v.buffered.end(v.buffered.length - 1);
-        const pct = Math.round((loaded / v.duration) * 100);
-        setLoadingPercent(pct);
-        if (pct >= 99) markReady();
+    const fetchVideo = async () => {
+      try {
+        const response = await fetch(VIDEO_SRC);
+        const contentLength = +(response.headers.get("Content-Length") ?? 0);
+        const reader = response.body?.getReader();
+        if (!reader) return;
+
+        const chunks: Uint8Array<ArrayBuffer>[] = [];
+        let received = 0;
+
+        // Stream download with real-time progress
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done || cancelled) break;
+          chunks.push(value);
+          received += value.length;
+          if (contentLength > 0) {
+            setLoadingPercent(Math.round((received / contentLength) * 100));
+          }
+        }
+
+        if (cancelled) return;
+
+        // All bytes in memory → create blob URL
+        const blob = new Blob(chunks, { type: "video/mp4" });
+        const url = URL.createObjectURL(blob);
+        blobUrlRef.current = url;
+        v.src = url;
+
+        // Wait for metadata so we have an accurate duration
+        await new Promise<void>((resolve) => {
+          if (v.readyState >= 1) { resolve(); return; }
+          const onMeta = () => { v.removeEventListener("loadedmetadata", onMeta); resolve(); };
+          v.addEventListener("loadedmetadata", onMeta);
+        });
+
+        if (cancelled) return;
+        durationRef.current = v.duration || 0;
+        setLoadingPercent(100);
+        setReady(true);
+        onLoaded?.();
+      } catch (err) {
+        console.error("[WindExplosion] fetch failed:", err);
       }
     };
-    const onLoadedMeta = () => {
-      durationRef.current = v.duration || 0;
-    };
 
-    v.addEventListener("progress", onProgressEvt);
-    v.addEventListener("loadeddata", markReady);
-    v.addEventListener("canplay", markReady);
-    v.addEventListener("canplaythrough", markReady);
-    v.addEventListener("loadedmetadata", onLoadedMeta);
-
-    // Safety fallback: if events somehow stall, force-ready after 8s once any data loaded
-    const fallback = window.setTimeout(() => {
-      if (v.readyState >= 2) markReady();
-    }, 8000);
+    fetchVideo();
 
     return () => {
-      v.removeEventListener("progress", onProgressEvt);
-      v.removeEventListener("loadeddata", markReady);
-      v.removeEventListener("canplay", markReady);
-      v.removeEventListener("canplaythrough", markReady);
-      v.removeEventListener("loadedmetadata", onLoadedMeta);
-      window.clearTimeout(fallback);
+      cancelled = true;
+      if (blobUrlRef.current) {
+        URL.revokeObjectURL(blobUrlRef.current);
+        blobUrlRef.current = "";
+      }
     };
   }, [onLoaded]);
 
@@ -91,7 +108,6 @@ export default function WindExplosion({ onProgress, onLoaded }: WindExplosionPro
       const dur = durationRef.current;
       if (dur > 0) {
         const t = Math.min(Math.max(progress * dur, 0), dur - 0.001);
-        targetTimeRef.current = t;
         // Only seek when meaningfully changed (~1/4 frame at 24fps = 0.01s)
         if (Math.abs(t - lastApplied) > 0.01) {
           try {
@@ -130,14 +146,14 @@ export default function WindExplosion({ onProgress, onLoaded }: WindExplosionPro
           </div>
         )}
 
+        {/* src is set dynamically via JS after blob is ready — do NOT set src attribute here */}
         <video
           ref={videoRef}
-          src={VIDEO_SRC}
           className="absolute inset-0 w-full h-full object-contain"
           style={{ visibility: ready ? "visible" : "hidden" }}
           muted
           playsInline
-          preload="auto"
+          preload="none"
           disablePictureInPicture
           disableRemotePlayback
         />
