@@ -1,0 +1,145 @@
+"use client";
+
+import { useState, useCallback } from "react";
+import { motion } from "framer-motion";
+import WindExplosion from "@/components/WindExplosion";
+
+type Beat = "A" | "B" | "C" | "D";
+
+interface BeatConfig {
+  range: [number, number];
+  title: string;
+  subtitle: string;
+  align: "center" | "left" | "right";
+  accent?: boolean;
+  showCTA?: boolean;
+}
+
+const beats: Record<Beat, BeatConfig> = {
+  A: {
+    range: [0, 0.20],
+    title: "УПРАВЛЯЙ ВЕТРОМ",
+    subtitle: "Прокрути вниз — и посмотри что будет",
+    align: "center",
+  },
+  B: {
+    range: [0.25, 0.45],
+    title: "ВЕТЕР ПОДНИМАЕТСЯ",
+    subtitle: "Что-то надвигается снизу...",
+    align: "left",
+  },
+  C: {
+    range: [0.50, 0.70],
+    title: "ВЗРЫВ",
+    subtitle: "Платье сорвано. Одежда парит в воздухе.",
+    align: "right",
+    accent: true,
+  },
+  D: {
+    range: [0.75, 0.95],
+    title: "ОТПРАВЬ ПОДРУГЕ",
+    subtitle: "Пусть она тоже попробует \ud83d\ude08",
+    align: "center",
+    showCTA: true,
+  },
+};
+
+function calcOpacity(progress: number, [start, end]: [number, number]): number {
+  const fadeInStart = start;
+  const fadeInEnd = start + 0.10;
+  const fadeOutStart = end - 0.10;
+  const fadeOutEnd = end;
+
+  if (progress < fadeInStart) return 0;
+  if (progress < fadeInEnd) return (progress - fadeInStart) / (fadeInEnd - fadeInStart);
+  if (progress < fadeOutStart) return 1;
+  if (progress < fadeOutEnd) return 1 - (progress - fadeOutStart) / (fadeOutEnd - fadeOutStart);
+  return 0;
+}
+
+function calcY(progress: number, [start, end]: [number, number]): number {
+  const fadeInStart = start;
+  const fadeInEnd = start + 0.10;
+  const fadeOutStart = end - 0.10;
+  const fadeOutEnd = end;
+
+  if (progress < fadeInStart) return 20;
+  if (progress < fadeInEnd) return 20 * (1 - (progress - fadeInStart) / (fadeInEnd - fadeInStart));
+  if (progress < fadeOutStart) return 0;
+  if (progress < fadeOutEnd) return -20 * ((progress - fadeOutStart) / (fadeOutEnd - fadeOutStart));
+  return -20;
+}
+
+const alignClasses: Record<string, string> = {
+  center: "text-center left-1/2 -translate-x-1/2",
+  left: "text-left left-[5%] sm:left-[10%]",
+  right: "text-right right-[5%] sm:right-[10%]",
+};
+
+export default function Home() {
+  const [progress, setProgress] = useState(0);
+
+  const handleProgress = useCallback((p: number) => {
+    setProgress(p);
+  }, []);
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    const text = "\ud83d\udc57 \ud83c\udf2c\ufe0f Управляй ветром — скроллом запусти ураган!";
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Управляй ветром", text, url });
+      } catch {}
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        alert("Ссылка скопирована! Отправь подруге \ud83d\ude09");
+      } catch {
+        prompt("Скопируй ссылку:", url);
+      }
+    }
+  };
+
+  return (
+    <main className="relative bg-[#050505] min-h-screen">
+      <WindExplosion onProgress={handleProgress} />
+
+      {/* Text overlays */}
+      <div className="fixed inset-0 pointer-events-none z-10">
+        {Object.entries(beats).map(([key, beat]) => {
+          const opacity = calcOpacity(progress, beat.range);
+          const y = calcY(progress, beat.range);
+
+          if (opacity <= 0) return null;
+
+          const alignClass = alignClasses[beat.align];
+          const h2ColorClass = beat.accent ? "text-[#FF3B30]" : "text-white/90";
+          const h2SizeClass = beat.align === "center"
+            ? "text-[3.9375rem] sm:text-[6.3rem] md:text-[8.4rem]"
+            : "text-[3.15rem] sm:text-[4.725rem] md:text-[6.3rem]";
+          const pMargin = beat.align === "left" ? "0" : "auto";
+          const pMarginR = beat.align === "right" ? "0" : "auto";
+
+          return (
+            <motion.div key={key} className="absolute top-1/2 w-full max-w-4xl px-6" style={{ opacity, transform: `translateY(${y}px)` }}>
+              <div className={`absolute top-0 -translate-y-1/2 ${alignClass}`}>
+                <h2 className={`font-black tracking-tight leading-none mb-3 ${h2ColorClass} ${h2SizeClass}`}>
+                  {beat.title}
+                </h2>
+                <p className="text-white/60 text-[1.18rem] sm:text-[1.31rem] md:text-[1.575rem] max-w-lg" style={{ marginLeft: pMargin, marginRight: pMarginR }}>
+                  {beat.subtitle}
+                </p>
+                {beat.showCTA && (
+                  <button onClick={handleShare} className="pointer-events-auto mt-6 px-8 py-3 bg-[#FF3B30] text-white font-semibold text-lg rounded-full hover:bg-red-600 hover:scale-105 active:scale-95 transition-all duration-200 shadow-lg shadow-red-500/25">
+                    Поделиться
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+    </main>
+  );
+}
