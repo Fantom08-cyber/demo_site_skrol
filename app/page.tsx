@@ -46,6 +46,7 @@ const beats: Record<Beat, BeatConfig> = {
     subtitle: "Пиши мне — сделаю динамический сайт для тебя",
     align: "center",
     showCTA: true,
+    gradient: true,
   },
 };
 
