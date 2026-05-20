@@ -159,7 +159,7 @@ export default function WindExplosion({ onProgress, onLoaded }: WindExplosionPro
         />
 
         {ready && showIndicator && (
-          <motion.div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2" initial={{ opacity: 1 }} animate={{ opacity: showIndicator ? 1 : 0 }} transition={{ duration: 0.3 }}>
+          <motion.div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2" initial={{ opacity: 1 }} animate={{ opacity: showIndicator ? 1 : 0 }} transition={{ duration: 0.3 }}>
             <span className="text-white/40 text-sm">Прокрути вниз</span>
             <motion.div className="w-5 h-5 border-r-2 border-b-2 border-white/40 rotate-45" animate={{ y: [0, 8, 0] }} transition={{ duration: 1.5, repeat: Infinity }} />
           </motion.div>

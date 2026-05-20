@@ -13,6 +13,7 @@ interface BeatConfig {
   align: "center" | "left" | "right";
   accent?: boolean;
   showCTA?: boolean;
+  instant?: boolean; // appear at full opacity immediately, no fade-in
 }
 
 const beats: Record<Beat, BeatConfig> = {
@@ -21,6 +22,7 @@ const beats: Record<Beat, BeatConfig> = {
     title: "УПРАВЛЯЙ ВЕТРОМ",
     subtitle: "Прокрути вниз — и посмотри что будет",
     align: "center",
+    instant: true,
   },
   B: {
     range: [0.25, 0.45],
@@ -44,11 +46,19 @@ const beats: Record<Beat, BeatConfig> = {
   },
 };
 
-function calcOpacity(progress: number, [start, end]: [number, number]): number {
-  const fadeInStart = start;
-  const fadeInEnd = start + 0.10;
+function calcOpacity(progress: number, [start, end]: [number, number], instant = false): number {
   const fadeOutStart = end - 0.10;
   const fadeOutEnd = end;
+
+  if (instant) {
+    // No fade-in: start at full opacity, only fade out at the end
+    if (progress < fadeOutStart) return 1;
+    if (progress < fadeOutEnd) return 1 - (progress - fadeOutStart) / (fadeOutEnd - fadeOutStart);
+    return 0;
+  }
+
+  const fadeInStart = start;
+  const fadeInEnd = start + 0.10;
 
   if (progress < fadeInStart) return 0;
   if (progress < fadeInEnd) return (progress - fadeInStart) / (fadeInEnd - fadeInStart);
@@ -57,11 +67,19 @@ function calcOpacity(progress: number, [start, end]: [number, number]): number {
   return 0;
 }
 
-function calcY(progress: number, [start, end]: [number, number]): number {
-  const fadeInStart = start;
-  const fadeInEnd = start + 0.10;
+function calcY(progress: number, [start, end]: [number, number], instant = false): number {
   const fadeOutStart = end - 0.10;
   const fadeOutEnd = end;
+
+  if (instant) {
+    // No slide-in: start at rest position, only slide out at the end
+    if (progress < fadeOutStart) return 0;
+    if (progress < fadeOutEnd) return -20 * ((progress - fadeOutStart) / (fadeOutEnd - fadeOutStart));
+    return -20;
+  }
+
+  const fadeInStart = start;
+  const fadeInEnd = start + 0.10;
 
   if (progress < fadeInStart) return 20;
   if (progress < fadeInEnd) return 20 * (1 - (progress - fadeInStart) / (fadeInEnd - fadeInStart));
@@ -113,8 +131,8 @@ export default function Home() {
         <div className="sm:hidden absolute bottom-0 left-0 right-0 h-[45%] bg-gradient-to-t from-black/80 to-transparent" />
 
         {Object.entries(beats).map(([key, beat]) => {
-          const opacity = calcOpacity(progress, beat.range);
-          const y = calcY(progress, beat.range);
+          const opacity = calcOpacity(progress, beat.range, beat.instant);
+          const y = calcY(progress, beat.range, beat.instant);
 
           if (opacity <= 0) return null;
 
