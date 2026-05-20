@@ -149,7 +149,7 @@ export default function WindExplosion({ onProgress, onLoaded }: WindExplosionPro
         {/* src is set dynamically via JS after blob is ready — do NOT set src attribute here */}
         <video
           ref={videoRef}
-          className="absolute inset-0 w-full h-full object-contain"
+          className="absolute inset-0 w-full h-full object-cover sm:object-contain"
           style={{ visibility: ready ? "visible" : "hidden" }}
           muted
           playsInline

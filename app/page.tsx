@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, Fragment } from "react";
 import { motion } from "framer-motion";
 import WindExplosion from "@/components/WindExplosion";
 
@@ -70,6 +70,7 @@ function calcY(progress: number, [start, end]: [number, number]): number {
   return -20;
 }
 
+// Desktop alignment (unchanged from original)
 const alignClasses: Record<string, string> = {
   center: "text-center left-1/2 -translate-x-1/2",
   left: "text-left left-[5%] sm:left-[10%]",
@@ -107,36 +108,86 @@ export default function Home() {
 
       {/* Text overlays */}
       <div className="fixed inset-0 pointer-events-none z-10">
+
+        {/* Mobile-only: bottom gradient so text stays readable over video */}
+        <div className="sm:hidden absolute bottom-0 left-0 right-0 h-[45%] bg-gradient-to-t from-black/80 to-transparent" />
+
         {Object.entries(beats).map(([key, beat]) => {
           const opacity = calcOpacity(progress, beat.range);
           const y = calcY(progress, beat.range);
 
           if (opacity <= 0) return null;
 
-          const alignClass = alignClasses[beat.align];
           const h2ColorClass = beat.accent ? "text-[#FF3B30]" : "text-white/90";
-          const h2SizeClass = beat.align === "center"
-            ? "text-[3.9375rem] sm:text-[6.3rem] md:text-[8.4rem]"
-            : "text-[3.15rem] sm:text-[4.725rem] md:text-[6.3rem]";
-          const pMargin = beat.align === "left" ? "0" : "auto";
+          // Desktop h2 sizes (applied from sm+ since the block is hidden below sm)
+          const h2SizeDesktop = beat.align === "center"
+            ? "text-[6.3rem] md:text-[8.4rem]"
+            : "text-[4.725rem] md:text-[6.3rem]";
+          const pMargin  = beat.align === "left"  ? "0" : "auto";
           const pMarginR = beat.align === "right" ? "0" : "auto";
 
+          const sharedStyle = { opacity, transform: `translateY(${y}px)` };
+
           return (
-            <motion.div key={key} className="absolute top-1/2 w-full max-w-4xl px-6" style={{ opacity, transform: `translateY(${y}px)` }}>
-              <div className={`absolute top-0 -translate-y-1/2 ${alignClass}`}>
-                <h2 className={`font-black tracking-tight leading-none mb-3 ${h2ColorClass} ${h2SizeClass}`}>
+            <Fragment key={key}>
+
+              {/* ── MOBILE (hidden on sm+) ──────────────────────────────────
+                  Positioned at the bottom of the screen, always centered.
+                  Font is ~30px — readable without overflowing narrow screens. */}
+              <motion.div
+                className="sm:hidden absolute bottom-[18%] left-0 w-full px-5 text-center"
+                style={sharedStyle}
+              >
+                <h2
+                  className={`font-black tracking-tight leading-none mb-2 ${h2ColorClass} text-[1.875rem]`}
+                  style={{ textShadow: "0 2px 16px rgba(0,0,0,0.9)" }}
+                >
                   {beat.title}
                 </h2>
-                <p className="text-white/60 text-[1.18rem] sm:text-[1.31rem] md:text-[1.575rem] max-w-lg" style={{ marginLeft: pMargin, marginRight: pMarginR }}>
+                <p
+                  className="text-white/70 text-[0.9rem] mx-auto max-w-xs"
+                  style={{ textShadow: "0 1px 8px rgba(0,0,0,0.9)" }}
+                >
                   {beat.subtitle}
                 </p>
                 {beat.showCTA && (
-                  <button onClick={handleShare} className="pointer-events-auto mt-6 px-8 py-3 bg-[#FF3B30] text-white font-semibold text-lg rounded-full hover:bg-red-600 hover:scale-105 active:scale-95 transition-all duration-200 shadow-lg shadow-red-500/25">
+                  <button
+                    onClick={handleShare}
+                    className="pointer-events-auto mt-5 px-7 py-3 bg-[#FF3B30] text-white font-semibold text-base rounded-full active:scale-95 transition-all duration-200 shadow-lg shadow-red-500/25"
+                  >
                     Поделиться
                   </button>
                 )}
-              </div>
-            </motion.div>
+              </motion.div>
+
+              {/* ── DESKTOP (hidden below sm) ───────────────────────────────
+                  Original layout: center / left / right at viewport midpoint. */}
+              <motion.div
+                className="hidden sm:block absolute top-1/2 w-full max-w-4xl px-6"
+                style={sharedStyle}
+              >
+                <div className={`absolute top-0 -translate-y-1/2 ${alignClasses[beat.align]}`}>
+                  <h2 className={`font-black tracking-tight leading-none mb-3 ${h2ColorClass} ${h2SizeDesktop}`}>
+                    {beat.title}
+                  </h2>
+                  <p
+                    className="text-white/60 text-[1.31rem] md:text-[1.575rem] max-w-lg"
+                    style={{ marginLeft: pMargin, marginRight: pMarginR }}
+                  >
+                    {beat.subtitle}
+                  </p>
+                  {beat.showCTA && (
+                    <button
+                      onClick={handleShare}
+                      className="pointer-events-auto mt-6 px-8 py-3 bg-[#FF3B30] text-white font-semibold text-lg rounded-full hover:bg-red-600 hover:scale-105 active:scale-95 transition-all duration-200 shadow-lg shadow-red-500/25"
+                    >
+                      Поделиться
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+
+            </Fragment>
           );
         })}
       </div>
